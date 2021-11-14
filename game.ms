@@ -95,9 +95,15 @@ isDown = false
 while true
 	isDown = mouse.button
 	if isDown and not wasDown then
-		col = floor((mouse.x-ox) / (tw+ov))
-		row = floor((mouse.y-oy) / (th+ov))
-		toggleCell(col,row)
+		if nextButton.contains(mouse) then
+			print "Next"
+		else if resetButton.contains(mouse) then
+			print "Reset"
+		else
+			col = floor((mouse.x-ox) / (tw+ov))
+			row = floor((mouse.y-oy) / (th+ov))		
+			toggleCell(col,row)
+		end if
 	end if
 	wasDown = isDown
 end while
