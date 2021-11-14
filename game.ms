@@ -173,4 +173,11 @@ while true
 		end if
 	end if
 	wasDown = isDown
+	
+	if key.available then
+		k = key.get
+		if k == "q" then exit
+		if k == "r" then resetBoard
+		if k == "n" then iterate
+	end if
 end while
