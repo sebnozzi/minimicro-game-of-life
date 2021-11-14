@@ -83,11 +83,15 @@ toggleCell = function(col,row)
 end function
 
 // Initialize all cells to the unset tile
-for row in range(0,brr)
-	for col in range(0,bcc)
-		tdisp.setCell(col,row,1)
+resetBoard = function()
+	for row in range(0,brr)
+		for col in range(0,bcc)
+			tdisp.setCell(col,row,1)
+		end for
 	end for
-end for
+end function
+
+resetBoard
 
 wasDown = false
 isDown = false
@@ -98,7 +102,7 @@ while true
 		if nextButton.contains(mouse) then
 			print "Next"
 		else if resetButton.contains(mouse) then
-			print "Reset"
+			resetBoard
 		else
 			col = floor((mouse.x-ox) / (tw+ov))
 			row = floor((mouse.y-oy) / (th+ov))		
