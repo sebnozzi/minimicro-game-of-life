@@ -20,14 +20,19 @@ gfx.fillRect tw,0,tw,th,color.white
 tileImgs = gfx.getImage(0,0,tw*2,th)
 
 // Generate button images
-gfx.clear
-gfx.fillRect 0,0,90,40,color.silver
-gfx.print "Reset",10,10,color.black
-resetImg = gfx.getImage(0,0,90,40)
-gfx.clear
-gfx.fillRect 0,0,80,40,color.silver
-gfx.print "Next",10,10,color.black
-nextImg = gfx.getImage(0,0,80,40)
+
+buildButtonImage = function(label,width=90,height=40)
+	gfx.clear
+	gfx.fillRect 0,0,width,height,color.silver
+	gfx.print label,10,5,color.black,"small"
+	return gfx.getImage(0,0,width,height)
+end function
+
+resetImg=buildButtonImage("Clear",65,30)
+nextImg=buildButtonImage("Step",55,30)
+playImg=buildButtonImage("Play",55,30)
+stopImg=buildButtonImage("Stop",55,30)
+randomizeImg=buildButtonImage("Random",75,30)
 
 // Setup displays
 display(6).mode = displayMode.tile
@@ -43,21 +48,34 @@ tdisp.overlap = -ov
 spr = display(4)
 
 // Create button sprites
-nextButton = new Sprite
-nextButton.image = nextImg
-nextButton.localBounds = new Bounds
-nextButton.localBounds.width = nextImg.width
-nextButton.localBounds.height = nextImg.height
-nextButton.x = ox+nextImg.width/2+bw-nextImg.width
-nextButton.y = oy+nextImg.height/2-nextImg.height-10
 
-resetButton = new Sprite
-resetButton.image = resetImg
-resetButton.localBounds = new Bounds
-resetButton.localBounds.width = resetImg.width
-resetButton.localBounds.height = resetImg.height
-resetButton.x = ox+resetImg.width/2
-resetButton.y = oy+resetImg.height/2-resetImg.height-10
+createButtonSprite = function(img)
+	buttonSprite = new Sprite
+	buttonSprite.image = img
+	buttonSprite.localBounds = new Bounds
+	buttonSprite.localBounds.width = img.width
+	buttonSprite.localBounds.height = img.height
+	buttonSprite.appearEnabled = function()
+		self.tint = color.white
+	end function
+	buttonSprite.appearDisabled = function()
+		self.tint = color.gray
+	end function
+	return buttonSprite
+end function
+
+nextButton = createButtonSprite(nextImg)
+resetButton = createButtonSprite(resetImg)
+playButton = createButtonSprite(playImg)
+randomizeButton = createButtonSprite(randomizeImg)
+
+playButton.showPlay = function()
+	self.image = playImg
+end function
+
+playButton.showStop = function()
+	self.image = stopImg
+end function
 
 // Clear displays
 gfx.clear color.clear
@@ -65,13 +83,15 @@ spr.clear
 tdisp.clear
 text.clear
 
-// Place sprites
-
-spr.sprites.push nextButton
-spr.sprites.push resetButton
-
-// Draw boundary box
-// gfx.drawRect ox,oy,bw,bh,color.red
+// Place sprite buttons
+buttonsToPlace = [nextButton, playButton, randomizeButton, resetButton]
+for btnIdx in buttonsToPlace.indexes
+	btn = buttonsToPlace[btnIdx]
+	img = btn.image
+	btn.x = ox+bw+img.width/2+20
+	btn.y = oy+bh-img.height/2-btnIdx*50
+	spr.sprites.push btn
+end for
 
 toggleCell = function(col,row)
 	if col < 0 or col >= bcc then return
@@ -131,13 +151,18 @@ calculateNextIteration = function()
 end function
 
 // Sets the board to the given multi-dimensional values
+// Returns the amount of changed cells
 setBoardValues = function(boardValues)
+	changes = 0
 	for row in range(0,brr-1)
 		for col in range(0,bcc-1)
+			currentValue = tdisp.cell(col,row)
 			newValue = boardValues[row][col]
+			if currentValue != newValue then changes = changes + 1
 			tdisp.setCell(col,row,newValue)
 		end for
 	end for
+	return changes
 end function
 
 // Resets the board to all empty cells
@@ -146,10 +171,22 @@ resetBoard = function()
 	setBoardValues(emptyBoard)
 end function
 
+// Fills board with random cells
+randomizeBoard = function()
+	for row in range(0,brr-1)
+		for col in range(0,bcc-1)
+			randomValue = rnd*3 < 1
+			tdisp.setCell(col,row,randomValue)
+		end for
+	end for	
+end function
+
 // Performs one iteration
+// Returns true if something changed from the previous iteration
 iterate = function()
 	nextBoard = calculateNextIteration
-	setBoardValues(nextBoard)
+	changedCellsCount = setBoardValues(nextBoard)
+	return changedCellsCount > 0
 end function
 
 // == MAIN PROGRAM ==
@@ -158,14 +195,44 @@ resetBoard
 
 wasDown = false
 isDown = false
+playing = false
+nextIterationTime = 0
+
+startPlaying = function()
+	globals.playing = true
+	for btn in [resetButton, randomizeButton, nextButton]
+		btn.appearDisabled
+	end for
+	playButton.showStop
+end function
+
+stopPlaying = function()
+	globals.playing = false
+	for btn in [resetButton, randomizeButton, nextButton]
+		btn.appearEnabled
+	end for
+	playButton.showPlay
+end function
+
+togglePlaying = function()
+	if playing then
+		stopPlaying
+	else
+		startPlaying
+	end if
+end function
 
 while true
 	isDown = mouse.button
 	if isDown and not wasDown then
 		if nextButton.contains(mouse) then
-			iterate
+			if not playing then iterate
 		else if resetButton.contains(mouse) then
-			resetBoard
+			if not playing then resetBoard
+		else if randomizeButton.contains(mouse) then
+			if not playing then randomizeBoard
+		else if playButton.contains(mouse) then
+			togglePlaying
 		else
 			col = floor((mouse.x-ox) / (tw+ov))
 			row = floor((mouse.y-oy) / (th+ov))		
@@ -174,10 +241,21 @@ while true
 	end if
 	wasDown = isDown
 	
+	if playing and time > nextIterationTime then
+		hadChanges = iterate
+		// Schedule next iteration some time in the future
+		nextIterationTime = time + 0.5
+		// Stop playing if nothing changes anymore
+		if not hadChanges then 
+			stopPlaying
+		end if
+	end if
+	
 	if key.available then
 		k = key.get
 		if k == "q" then exit
-		if k == "r" then resetBoard
-		if k == "n" then iterate
+		if k == "r" and not playing then resetBoard
+		if k == "n" and not playing then iterate
+		if k == "p" then togglePlaying
 	end if
 end while
