@@ -14,7 +14,7 @@ ox = 960/2-bw/2
 oy = 640/2-bh/2
 
 // Delay between iterations when animating ("playing")
-animationFrameDelay = 0.5
+animationFrameDelay = 0.2
 
 gfx.clear
 // Generate tileset image
