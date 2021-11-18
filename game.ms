@@ -4,8 +4,8 @@ ov = 1
 tw = 20
 th = 20
 // Board dimensions in cells (cols, rows)
-bcc = 10
-brr = 10
+bcc = 40
+brr = 20
 // Board dimensions in pixels
 bw = bcc*(tw+ov)
 bh = brr*(th+ov)
