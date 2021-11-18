@@ -88,8 +88,8 @@ buttonsToPlace = [nextButton, playButton, randomizeButton, resetButton]
 for btnIdx in buttonsToPlace.indexes
 	btn = buttonsToPlace[btnIdx]
 	img = btn.image
-	btn.x = ox+bw+img.width/2+20
-	btn.y = oy+bh-img.height/2-btnIdx*50
+	btn.x = ox+btn.image.width/2+btnIdx*150
+	btn.y = oy-btn.image.height
 	spr.sprites.push btn
 end for
 
