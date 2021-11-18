@@ -13,6 +13,9 @@ bh = brr*(th+ov)
 ox = 960/2-bw/2
 oy = 640/2-bh/2
 
+// Delay between iterations when animating ("playing")
+animationFrameDelay = 0.5
+
 gfx.clear
 // Generate tileset image
 gfx.fillRect 0,0,tw,th,color.gray
@@ -244,7 +247,7 @@ while true
 	if playing and time > nextIterationTime then
 		hadChanges = iterate
 		// Schedule next iteration some time in the future
-		nextIterationTime = time + 0.5
+		nextIterationTime = time + animationFrameDelay
 		// Stop playing if nothing changes anymore
 		if not hadChanges then 
 			stopPlaying
